@@ -3,178 +3,743 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UEL/COPS — Simulado Residência Médica</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<title>TutorIA — Residência Médica</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Barlow+Condensed:wght@400;600;700;900&family=Barlow:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg:#0f1117;--surface:#181c27;--surface2:#1f2436;--border:#2a3050;
-    --accent:#4f8ef7;--accent2:#7c5cbf;--green:#34c98a;--red:#f05c6e;
-    --yellow:#f5c542;--text:#e8eaf2;--muted:#7a82a0;--card:#1a1f32;
-  }
-  *{box-sizing:border-box;margin:0;padding:0;}
-  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+:root {
+  --bg:       #0a0800;
+  --bg2:      #100d00;
+  --hot-pink: #ff2d6b;
+  --orange:   #ff6a00;
+  --yellow:   #ffe600;
+  --cyan:     #00f5d4;
+  --white:    #f5f0e8;
+  --muted:    #8a7a60;
+  --border:   #2a2010;
+  --card:     #13100a;
+  --green:    #39ff14;
+  --red:      #ff2d6b;
+}
 
-  /* HOME */
-  #screen-home{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;}
-  .logo{font-family:'Playfair Display',serif;font-size:2.8rem;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:.4rem;}
-  .subtitle{color:var(--muted);font-size:1rem;margin-bottom:1.5rem;letter-spacing:.05em;}
+/* ── RESET & BASE ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--white);
+  font-family: 'Barlow', sans-serif;
+  min-height: 100vh;
+  cursor: crosshair;
+  overflow-x: hidden;
+}
 
-  /* SYNC STATUS */
-  .sync-status{font-size:.78rem;padding:.3rem .8rem;border-radius:99px;margin-bottom:1rem;cursor:default;}
-  .sync-ok{background:rgba(52,201,138,.1);color:var(--green);border:1px solid rgba(52,201,138,.25);}
-  .sync-err{background:rgba(240,92,110,.1);color:var(--red);border:1px solid rgba(240,92,110,.25);}
-  .sync-loading{background:rgba(79,142,247,.1);color:var(--accent);border:1px solid rgba(79,142,247,.25);}
+/* ── SCANLINE OVERLAY ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,.18) 2px,
+    rgba(0,0,0,.18) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
 
-  /* SYNC PANEL */
-  .sync-panel{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:1.2rem;margin-bottom:1.2rem;width:100%;max-width:680px;}
-  .sync-panel h3{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.8rem;}
-  .sync-row{display:flex;gap:.6rem;align-items:center;margin-bottom:.6rem;}
-  .sync-input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.5rem .8rem;color:var(--text);font-size:.82rem;font-family:monospace;}
-  .sync-input:focus{outline:none;border-color:var(--accent);}
-  .btn-sm{padding:.45rem .9rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:.78rem;cursor:pointer;transition:all .2s;white-space:nowrap;}
-  .btn-sm:hover{border-color:var(--accent);color:var(--accent);}
-  .btn-sm.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
-  .btn-sm.primary:hover{opacity:.85;}
-  .sync-hint{font-size:.73rem;color:var(--muted);margin-top:.4rem;line-height:1.5;}
-  .sync-toggle{font-size:.78rem;color:var(--accent);cursor:pointer;text-decoration:underline;margin-bottom:.5rem;display:block;width:100%;max-width:680px;text-align:right;}
+/* ── NOISE TEXTURE ── */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  pointer-events: none;
+  z-index: 9998;
+  opacity: .6;
+}
 
-  /* CONFIG CARD */
-  .config-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2rem;width:100%;max-width:680px;}
-  .filter-section{margin-bottom:1.8rem;}
-  .filter-label{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.6rem;display:block;}
-  .chips{display:flex;flex-wrap:wrap;gap:.5rem;}
-  .chip{padding:.35rem .85rem;border-radius:99px;border:1px solid var(--border);font-size:.82rem;cursor:pointer;transition:all .2s;color:var(--muted);background:transparent;}
-  .chip:hover{border-color:var(--accent);color:var(--accent);}
-  .chip.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500;}
-  .chip.all{border-color:var(--accent2);color:var(--accent2);}
-  .chip.all.active{background:var(--accent2);border-color:var(--accent2);color:#fff;}
-  .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;}
-  .mode-btn{padding:1rem;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;text-align:left;transition:all .2s;}
-  .mode-btn:hover{border-color:var(--accent);background:rgba(79,142,247,.07);}
-  .mode-btn.active{border-color:var(--accent);background:rgba(79,142,247,.12);}
-  .mode-btn .mode-icon{font-size:1.4rem;margin-bottom:.4rem;display:block;}
-  .mode-btn .mode-title{font-weight:600;font-size:.95rem;}
-  .mode-btn .mode-desc{font-size:.78rem;color:var(--muted);margin-top:.2rem;}
-  .stat-bar{display:flex;gap:1.5rem;padding:1rem 0;border-top:1px solid var(--border);margin-top:1rem;}
-  .stat{text-align:center;}
-  .stat-n{font-size:1.4rem;font-weight:600;color:var(--accent);font-family:'Playfair Display',serif;}
-  .stat-l{font-size:.75rem;color:var(--muted);}
-  .btn-start{width:100%;padding:1rem;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;margin-top:1.5rem;transition:opacity .2s;font-family:'DM Sans',sans-serif;}
-  .btn-start:hover{opacity:.88;}
-  .btn-start:disabled{opacity:.4;cursor:not-allowed;}
+/* ── TYPOGRAPHY ── */
+.font-display  { font-family: 'Bebas Neue', sans-serif; letter-spacing: .04em; }
+.font-mono     { font-family: 'Share Tech Mono', monospace; }
+.font-cond     { font-family: 'Barlow Condensed', sans-serif; }
 
-  /* QUIZ */
-  #screen-quiz{display:none;flex-direction:column;min-height:100vh;}
-  .quiz-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:10;}
-  .progress-wrap{flex:1;margin:0 2rem;}
-  .progress-info{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-bottom:.4rem;}
-  .progress-bar{height:4px;background:var(--border);border-radius:99px;overflow:hidden;}
-  .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px;transition:width .4s ease;}
-  .score-pill{display:flex;gap:1rem;font-size:.85rem;font-weight:500;}
-  .score-c{color:var(--green);}
-  .score-e{color:var(--red);}
-  .btn-quit{background:transparent;border:1px solid var(--border);color:var(--muted);padding:.4rem .9rem;border-radius:8px;cursor:pointer;font-size:.82rem;transition:all .2s;}
-  .btn-quit:hover{border-color:var(--red);color:var(--red);}
-  .quiz-body{flex:1;display:flex;justify-content:center;padding:2.5rem 1.5rem;}
-  .question-card{width:100%;max-width:800px;}
-  .q-meta{display:flex;gap:.6rem;margin-bottom:1.2rem;flex-wrap:wrap;align-items:center;}
-  .badge{padding:.25rem .7rem;border-radius:99px;font-size:.75rem;font-weight:500;}
-  .badge-esp{background:rgba(79,142,247,.15);color:var(--accent);border:1px solid rgba(79,142,247,.3);}
-  .badge-ano{background:rgba(124,92,191,.15);color:var(--accent2);border:1px solid rgba(124,92,191,.3);}
-  .badge-tema{background:rgba(245,197,66,.1);color:var(--yellow);border:1px solid rgba(245,197,66,.25);font-size:.7rem;}
-  .sync-dot{width:7px;height:7px;border-radius:50%;margin-left:auto;flex-shrink:0;}
-  .sync-dot.ok{background:var(--green);}
-  .sync-dot.err{background:var(--red);}
-  .sync-dot.saving{background:var(--yellow);animation:pulse 1s infinite;}
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-  .q-text{font-size:1.05rem;line-height:1.75;color:var(--text);margin-bottom:2rem;font-weight:300;}
-  .options{display:flex;flex-direction:column;gap:.75rem;}
-  .option{display:flex;align-items:flex-start;gap:1rem;padding:1rem 1.2rem;border-radius:12px;border:1px solid var(--border);cursor:pointer;transition:all .2s;background:var(--card);}
-  .option:hover:not(.locked){border-color:var(--accent);background:rgba(79,142,247,.06);}
-  .option-letter{min-width:28px;height:28px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:600;color:var(--muted);flex-shrink:0;margin-top:.1rem;}
-  .option-text{font-size:.95rem;line-height:1.55;color:var(--text);}
-  .option.correct{border-color:var(--green);background:rgba(52,201,138,.08);}
-  .option.correct .option-letter{background:var(--green);color:#fff;}
-  .option.wrong{border-color:var(--red);background:rgba(240,92,110,.08);}
-  .option.wrong .option-letter{background:var(--red);color:#fff;}
-  .option.locked{cursor:default;}
-  .feedback{margin-top:1.5rem;padding:1.2rem 1.4rem;border-radius:12px;font-size:.92rem;line-height:1.6;display:none;}
-  .feedback.correct{background:rgba(52,201,138,.1);border:1px solid rgba(52,201,138,.3);color:var(--green);}
-  .feedback.wrong{background:rgba(240,92,110,.1);border:1px solid rgba(240,92,110,.3);color:#f07a88;}
-  .feedback.show{display:block;}
-  .btn-next{margin-top:1.5rem;padding:.85rem 2rem;border-radius:12px;background:var(--accent);border:none;color:#fff;font-size:.95rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;display:none;transition:opacity .2s;}
-  .btn-next:hover{opacity:.85;}
-  .btn-next.show{display:inline-block;}
-  .sr-indicator{font-size:.72rem;color:var(--muted);margin-top:.5rem;}
-  .sr-new{color:var(--accent);}.sr-review{color:var(--yellow);}.sr-known{color:var(--green);}
+/* ── DIAGONAL STRIPE BG ── */
+.stripe-bg {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 8px,
+    rgba(255,45,107,.04) 8px,
+    rgba(255,45,107,.04) 16px
+  );
+}
 
-  /* RESULTADO */
-  #screen-result{display:none;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:2rem;}
-  .result-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:3rem 2.5rem;max-width:560px;width:100%;text-align:center;}
-  .result-score{font-family:'Playfair Display',serif;font-size:5rem;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1;}
-  .result-label{color:var(--muted);margin:.5rem 0 2rem;font-size:1rem;}
-  .result-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:2rem;}
-  .result-stat{background:var(--card);border-radius:12px;padding:1rem;}
-  .result-stat-n{font-size:1.6rem;font-weight:700;font-family:'Playfair Display',serif;}
-  .result-stat-l{font-size:.75rem;color:var(--muted);margin-top:.2rem;}
-  .result-breakdown{text-align:left;background:var(--card);border-radius:12px;padding:1.2rem;margin-bottom:1.5rem;max-height:260px;overflow-y:auto;}
-  .result-breakdown h3{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.8rem;}
-  .breakdown-row{display:flex;justify-content:space-between;font-size:.85rem;padding:.35rem 0;border-bottom:1px solid var(--border);}
-  .breakdown-row:last-child{border-bottom:none;}
-  .breakdown-pct{font-weight:600;}
-  .pct-good{color:var(--green);}.pct-mid{color:var(--yellow);}.pct-bad{color:var(--red);}
-  .btn-restart{padding:.9rem 2.5rem;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
+/* ══════════════════════════════
+   HOME SCREEN
+══════════════════════════════ */
+#screen-home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 0 1.5rem 3rem;
+  position: relative;
+}
 
-  /* MODAL */
-  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;}
-  .modal-overlay.show{display:flex;}
-  .modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:2rem;max-width:480px;width:90%;}
-  .modal h2{font-size:1.1rem;margin-bottom:.5rem;}
-  .modal p{font-size:.85rem;color:var(--muted);line-height:1.6;margin-bottom:1.2rem;}
-  .modal-section{background:var(--card);border-radius:10px;padding:1rem;margin-bottom:1rem;}
-  .modal-section h3{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.6rem;}
-  .bin-id-display{font-family:monospace;font-size:.82rem;color:var(--accent);word-break:break-all;background:var(--surface2);padding:.6rem .8rem;border-radius:8px;margin-bottom:.6rem;}
-  .modal-row{display:flex;gap:.6rem;}
-  .modal-input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.5rem .8rem;color:var(--text);font-size:.82rem;font-family:monospace;}
-  .modal-input:focus{outline:none;border-color:var(--accent);}
-  .modal-msg{font-size:.8rem;margin-top:.5rem;min-height:1.2em;}
-  .msg-ok{color:var(--green);}
-  .msg-err{color:var(--red);}
-  .btn-close{margin-top:1rem;width:100%;padding:.7rem;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:.9rem;}
-  .btn-close:hover{border-color:var(--accent);color:var(--accent);}
+/* Hero */
+.hero {
+  width: 100%;
+  max-width: 780px;
+  padding: 3rem 0 1.5rem;
+  position: relative;
+}
+.hero-eyebrow {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .72rem;
+  color: var(--orange);
+  letter-spacing: .25em;
+  text-transform: uppercase;
+  margin-bottom: .5rem;
+}
+.hero-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(5rem, 15vw, 9rem);
+  line-height: .9;
+  color: var(--white);
+  text-shadow:
+    4px 4px 0 var(--hot-pink),
+    8px 8px 0 rgba(255,45,107,.3);
+  position: relative;
+}
+.hero-title span {
+  color: var(--hot-pink);
+  text-shadow:
+    4px 4px 0 var(--orange),
+    8px 8px 0 rgba(255,106,0,.3);
+}
+.hero-sub {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  margin-top: .8rem;
+}
+.hero-line {
+  height: 3px;
+  background: linear-gradient(90deg, var(--hot-pink), var(--orange), var(--yellow));
+  margin: 1.2rem 0;
+  position: relative;
+}
+.hero-line::after {
+  content: '';
+  position: absolute;
+  right: 0; top: -3px;
+  width: 9px; height: 9px;
+  background: var(--yellow);
+  transform: rotate(45deg);
+}
+
+/* SYNC STATUS */
+.sync-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .7rem;
+  letter-spacing: .1em;
+  padding: .3rem .8rem;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all .15s;
+  margin-bottom: 1.2rem;
+}
+.sync-pill.ok    { border-color: var(--green); color: var(--green); }
+.sync-pill.err   { border-color: var(--hot-pink); color: var(--hot-pink); }
+.sync-pill.load  { border-color: var(--orange); color: var(--orange); animation: blink .8s step-end infinite; }
+@keyframes blink { 50% { opacity: .4; } }
+.sync-toggle {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .68rem;
+  color: var(--muted);
+  cursor: pointer;
+  letter-spacing: .1em;
+  text-decoration: none;
+  display: block;
+  text-align: right;
+  width: 100%;
+  max-width: 780px;
+  margin-bottom: .8rem;
+  transition: color .15s;
+}
+.sync-toggle:hover { color: var(--orange); }
+
+/* MAIN PANEL */
+.panel {
+  width: 100%;
+  max-width: 780px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  position: relative;
+}
+.panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    -45deg, transparent, transparent 10px,
+    rgba(255,230,0,.015) 10px, rgba(255,230,0,.015) 20px
+  );
+  pointer-events: none;
+}
+.panel-section {
+  padding: 1.4rem 1.6rem;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.panel-section:last-child { border-bottom: none; }
+.section-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: .7rem;
+  font-weight: 700;
+  color: var(--orange);
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  margin-bottom: .9rem;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.section-label::before {
+  content: '▶';
+  font-size: .55rem;
+  color: var(--hot-pink);
+}
+
+/* BANCA CHIPS */
+.chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+.chip {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  padding: .3rem .85rem;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+  transition: all .12s;
+  text-transform: uppercase;
+  position: relative;
+  overflow: hidden;
+}
+.chip::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--hot-pink);
+  transform: translateX(-101%);
+  transition: transform .12s;
+  z-index: -1;
+}
+.chip:hover { border-color: var(--hot-pink); color: var(--white); }
+.chip:hover::after { transform: translateX(0); }
+.chip.active {
+  border-color: var(--hot-pink);
+  color: var(--bg);
+  background: var(--hot-pink);
+  font-weight: 900;
+}
+.chip.all-chip { border-color: var(--orange); color: var(--orange); }
+.chip.all-chip:hover { background: var(--orange); color: var(--bg); border-color: var(--orange); }
+.chip.all-chip.active { background: var(--orange); color: var(--bg); border-color: var(--orange); }
+.chip.disabled-chip { opacity: .3; cursor: not-allowed; pointer-events: none; }
+.chip-coming {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .65rem;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  padding: .3rem .85rem;
+  opacity: .5;
+  cursor: default;
+  letter-spacing: .08em;
+}
+
+/* MODE GRID */
+.mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+.mode-btn {
+  padding: .9rem 1rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--white);
+  cursor: pointer;
+  text-align: left;
+  transition: all .12s;
+  position: relative;
+  overflow: hidden;
+}
+.mode-btn::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--hot-pink);
+  transform: scaleY(0);
+  transition: transform .12s;
+}
+.mode-btn:hover { border-color: var(--hot-pink); background: rgba(255,45,107,.05); }
+.mode-btn:hover::before { transform: scaleY(1); }
+.mode-btn.active { border-color: var(--orange); background: rgba(255,106,0,.08); }
+.mode-btn.active::before { transform: scaleY(1); background: var(--orange); }
+.mode-icon { font-size: 1.2rem; margin-bottom: .3rem; display: block; }
+.mode-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 1rem; letter-spacing: .05em; text-transform: uppercase; }
+.mode-desc  { font-size: .72rem; color: var(--muted); margin-top: .2rem; line-height: 1.4; }
+
+/* QTY */
+.qty-row { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin-top: .8rem; }
+.qty-label { font-family: 'Share Tech Mono', monospace; font-size: .72rem; color: var(--muted); }
+.qty-input {
+  width: 80px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  color: var(--yellow);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .85rem;
+  padding: .3rem .6rem;
+  outline: none;
+  transition: border-color .15s;
+}
+.qty-input:focus { border-color: var(--orange); }
+.qty-available {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .7rem;
+  color: var(--muted);
+}
+
+/* STAT BAR */
+.stat-bar {
+  display: flex;
+  gap: 0;
+  border-top: 1px solid var(--border);
+}
+.stat {
+  flex: 1;
+  padding: 1rem;
+  border-right: 1px solid var(--border);
+  text-align: center;
+}
+.stat:last-child { border-right: none; }
+.stat-n {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2rem;
+  line-height: 1;
+  color: var(--orange);
+}
+.stat-l {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .6rem;
+  color: var(--muted);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-top: .2rem;
+}
+
+/* START BUTTON */
+.btn-start {
+  width: 100%;
+  padding: 1.2rem;
+  background: var(--hot-pink);
+  border: none;
+  color: var(--bg);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.8rem;
+  letter-spacing: .12em;
+  cursor: crosshair;
+  transition: all .12s;
+  position: relative;
+  overflow: hidden;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+.btn-start:hover {
+  background: var(--orange);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 rgba(255,45,107,.4);
+}
+.btn-start:active { transform: translateY(0); box-shadow: none; }
+.btn-start:disabled { opacity: .3; cursor: not-allowed; transform: none; }
+
+/* ══════════════════════════════
+   QUIZ SCREEN
+══════════════════════════════ */
+#screen-quiz { display: none; flex-direction: column; min-height: 100vh; }
+
+.quiz-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .8rem 1.5rem;
+  border-bottom: 2px solid var(--hot-pink);
+  position: sticky; top: 0;
+  background: var(--bg);
+  z-index: 100;
+  gap: 1rem;
+}
+.quiz-logo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.4rem;
+  color: var(--hot-pink);
+  text-shadow: 2px 2px 0 var(--orange);
+  white-space: nowrap;
+}
+.score-pill { display: flex; gap: .8rem; }
+.score-c { font-family: 'Share Tech Mono', monospace; font-size: .85rem; color: var(--green); }
+.score-e { font-family: 'Share Tech Mono', monospace; font-size: .85rem; color: var(--hot-pink); }
+
+.progress-wrap { flex: 1; }
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .65rem;
+  color: var(--muted);
+  margin-bottom: .3rem;
+}
+.progress-bar { height: 3px; background: var(--border); position: relative; }
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--hot-pink), var(--orange));
+  transition: width .3s ease;
+  position: relative;
+}
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  right: -4px; top: -3px;
+  width: 9px; height: 9px;
+  background: var(--yellow);
+  transform: rotate(45deg);
+}
+
+.btn-quit {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: .35rem .8rem;
+  cursor: pointer;
+  transition: all .12s;
+}
+.btn-quit:hover { border-color: var(--hot-pink); color: var(--hot-pink); }
+
+.quiz-body { flex: 1; display: flex; justify-content: center; padding: 2rem 1.5rem; }
+.question-card { width: 100%; max-width: 820px; }
+
+.q-meta { display: flex; gap: .5rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+.badge {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: .2rem .6rem;
+  border: 1px solid;
+}
+.badge-banca { border-color: var(--hot-pink); color: var(--hot-pink); background: rgba(255,45,107,.08); }
+.badge-esp   { border-color: var(--orange); color: var(--orange); background: rgba(255,106,0,.08); }
+.badge-ano   { border-color: var(--yellow); color: var(--yellow); background: rgba(255,230,0,.07); }
+.badge-tema  { border-color: var(--border); color: var(--muted); font-size: .65rem; }
+.sync-dot { width: 6px; height: 6px; border-radius: 0; transform: rotate(45deg); margin-left: auto; flex-shrink: 0; }
+.sync-dot.ok  { background: var(--green); }
+.sync-dot.err { background: var(--hot-pink); }
+.sync-dot.saving { background: var(--yellow); animation: blink .5s step-end infinite; }
+
+.q-number {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: .9rem;
+  color: var(--muted);
+  letter-spacing: .15em;
+  margin-bottom: .4rem;
+}
+.q-text {
+  font-size: 1rem;
+  line-height: 1.8;
+  color: var(--white);
+  font-weight: 300;
+  margin-bottom: 2rem;
+  border-left: 2px solid var(--hot-pink);
+  padding-left: 1.2rem;
+}
+
+.options { display: flex; flex-direction: column; gap: .5rem; }
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: .9rem;
+  padding: .9rem 1.1rem;
+  border: 1px solid var(--border);
+  cursor: crosshair;
+  transition: all .1s;
+  background: var(--card);
+  position: relative;
+  overflow: hidden;
+}
+.option::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--hot-pink);
+  transform: scaleY(0);
+  transition: transform .1s;
+}
+.option:hover:not(.locked) { border-color: var(--hot-pink); background: rgba(255,45,107,.05); }
+.option:hover:not(.locked)::before { transform: scaleY(1); }
+.option-letter {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.1rem;
+  min-width: 26px;
+  color: var(--muted);
+  flex-shrink: 0;
+  margin-top: .05rem;
+  transition: color .1s;
+}
+.option-text { font-size: .92rem; line-height: 1.55; color: var(--white); }
+.option.correct { border-color: var(--green); background: rgba(57,255,20,.05); }
+.option.correct::before { transform: scaleY(1); background: var(--green); }
+.option.correct .option-letter { color: var(--green); }
+.option.wrong { border-color: var(--hot-pink); background: rgba(255,45,107,.06); }
+.option.wrong::before { transform: scaleY(1); }
+.option.wrong .option-letter { color: var(--hot-pink); }
+.option.locked { cursor: default; }
+
+.feedback {
+  margin-top: 1.2rem;
+  padding: 1rem 1.2rem;
+  border-left: 3px solid;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: .03em;
+  display: none;
+}
+.feedback.correct { border-color: var(--green); color: var(--green); background: rgba(57,255,20,.04); }
+.feedback.wrong   { border-color: var(--hot-pink); color: var(--hot-pink); background: rgba(255,45,107,.04); }
+.feedback.show { display: block; }
+
+.btn-next {
+  margin-top: 1.2rem;
+  padding: .75rem 1.8rem;
+  background: var(--orange);
+  border: none;
+  color: var(--bg);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.2rem;
+  letter-spacing: .1em;
+  cursor: crosshair;
+  display: none;
+  transition: all .12s;
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+}
+.btn-next:hover { background: var(--yellow); transform: translateX(3px); }
+.btn-next.show { display: inline-block; }
+
+.sr-indicator { font-family: 'Share Tech Mono', monospace; font-size: .65rem; color: var(--muted); margin-top: .6rem; letter-spacing: .08em; }
+.sr-new    { color: var(--cyan); }
+.sr-review { color: var(--yellow); }
+.sr-known  { color: var(--green); }
+
+/* ══════════════════════════════
+   RESULT SCREEN
+══════════════════════════════ */
+#screen-result { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem; }
+.result-card {
+  width: 100%;
+  max-width: 560px;
+  border: 1px solid var(--hot-pink);
+  background: var(--card);
+  padding: 0;
+  position: relative;
+}
+.result-card::before {
+  content: 'RESULTADO';
+  position: absolute;
+  top: -1px; left: 2rem;
+  background: var(--hot-pink);
+  color: var(--bg);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: .9rem;
+  letter-spacing: .2em;
+  padding: .1rem .6rem;
+}
+.result-hero { padding: 3rem 2rem 2rem; text-align: center; }
+.result-score {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 7rem;
+  line-height: 1;
+  color: var(--white);
+  text-shadow: 5px 5px 0 var(--hot-pink), 10px 10px 0 rgba(255,45,107,.3);
+}
+.result-label { font-family: 'Share Tech Mono', monospace; font-size: .75rem; color: var(--muted); letter-spacing: .15em; margin-top: .3rem; }
+.result-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid var(--border); }
+.result-stat { padding: 1.2rem; text-align: center; border-right: 1px solid var(--border); }
+.result-stat:last-child { border-right: none; }
+.result-stat-n { font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; }
+.result-stat-l { font-family: 'Share Tech Mono', monospace; font-size: .6rem; color: var(--muted); letter-spacing: .1em; margin-top: .2rem; }
+.result-breakdown { border-top: 1px solid var(--border); padding: 1.2rem; max-height: 240px; overflow-y: auto; }
+.result-breakdown h3 { font-family: 'Barlow Condensed', sans-serif; font-size: .7rem; font-weight: 700; color: var(--orange); letter-spacing: .15em; text-transform: uppercase; margin-bottom: .8rem; }
+.breakdown-row { display: flex; justify-content: space-between; font-family: 'Share Tech Mono', monospace; font-size: .75rem; padding: .3rem 0; border-bottom: 1px solid var(--border); color: var(--muted); }
+.breakdown-row:last-child { border-bottom: none; }
+.breakdown-pct { font-weight: 700; }
+.pct-good { color: var(--green); } .pct-mid { color: var(--yellow); } .pct-bad { color: var(--hot-pink); }
+.btn-restart {
+  display: block;
+  width: 100%;
+  padding: 1.1rem;
+  background: var(--hot-pink);
+  border: none;
+  color: var(--bg);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 1.6rem;
+  letter-spacing: .12em;
+  cursor: crosshair;
+  transition: background .12s;
+}
+.btn-restart:hover { background: var(--orange); }
+
+/* ══════════════════════════════
+   MODAL SYNC
+══════════════════════════════ */
+.modal-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.85);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: var(--card);
+  border: 1px solid var(--hot-pink);
+  padding: 0;
+  max-width: 480px;
+  width: 90%;
+  position: relative;
+}
+.modal::before {
+  content: 'SYNC // MULTI-DEVICE';
+  position: absolute;
+  top: -1px; left: 1.5rem;
+  background: var(--hot-pink);
+  color: var(--bg);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: .85rem;
+  letter-spacing: .2em;
+  padding: .1rem .6rem;
+}
+.modal-body { padding: 2.5rem 1.5rem 1.5rem; }
+.modal p { font-size: .82rem; color: var(--muted); line-height: 1.6; margin-bottom: 1.2rem; }
+.modal-section { background: var(--bg2); border: 1px solid var(--border); padding: 1rem; margin-bottom: .8rem; }
+.modal-section h3 { font-family: 'Barlow Condensed', sans-serif; font-size: .7rem; font-weight: 700; color: var(--orange); letter-spacing: .15em; text-transform: uppercase; margin-bottom: .6rem; }
+.bin-display { font-family: 'Share Tech Mono', monospace; font-size: .75rem; color: var(--cyan); word-break: break-all; background: var(--bg); padding: .5rem .7rem; margin-bottom: .6rem; border: 1px solid var(--border); }
+.modal-row { display: flex; gap: .5rem; }
+.modal-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--cyan);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: .75rem;
+  padding: .4rem .6rem;
+  outline: none;
+  transition: border-color .15s;
+}
+.modal-input:focus { border-color: var(--orange); }
+.btn-modal {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: .8rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  padding: .4rem .9rem;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all .12s;
+  white-space: nowrap;
+}
+.btn-modal.primary { background: var(--orange); border-color: var(--orange); color: var(--bg); }
+.btn-modal.primary:hover { background: var(--hot-pink); border-color: var(--hot-pink); }
+.btn-modal.ghost { background: transparent; border-color: var(--border); color: var(--muted); }
+.btn-modal.ghost:hover { border-color: var(--white); color: var(--white); }
+.modal-msg { font-family: 'Share Tech Mono', monospace; font-size: .72rem; margin-top: .4rem; min-height: 1em; }
+.msg-ok { color: var(--green); } .msg-err { color: var(--hot-pink); }
+.modal-hint { font-family: 'Share Tech Mono', monospace; font-size: .65rem; color: var(--muted); margin-top: .4rem; line-height: 1.5; }
+.modal-close-bar { padding: .8rem 1.5rem; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; }
 </style>
 </head>
 <body>
 
-<!-- HOME -->
+<!-- ══ HOME ══ -->
 <div id="screen-home">
-  <div class="logo">UEL·COPS</div>
-  <div class="subtitle">Residência Médica · Simulado Adaptativo</div>
-  <div class="sync-status sync-loading" id="sync-status" onclick="openSyncModal()" style="cursor:pointer" title="Clique para gerenciar sincronização">⟳ Carregando progresso...</div>
 
-  <span class="sync-toggle" onclick="openSyncModal()">⚙ Sincronizar entre dispositivos</span>
+  <div class="hero">
+    <div class="hero-eyebrow">// SIMULADO ADAPTATIVO</div>
+    <div class="hero-title">Tutor<span>IA</span></div>
+    <div class="hero-sub">Residência Médica · Questões comentadas por banca</div>
+    <div class="hero-line"></div>
+  </div>
 
-  <div class="config-card">
-    <div class="filter-section">
-      <span class="filter-label">Especialidades</span>
+  <div class="sync-pill load" id="sync-status" onclick="openSyncModal()" title="Clique para gerenciar sincronização">
+    <span>◈</span><span id="sync-text">CARREGANDO...</span>
+  </div>
+  <a class="sync-toggle" onclick="openSyncModal()">⚙ SYNC ENTRE DISPOSITIVOS</a>
+
+  <div class="panel stripe-bg">
+
+    <!-- BANCA -->
+    <div class="panel-section">
+      <div class="section-label">Banca</div>
+      <div class="chips" id="chips-banca">
+        <button class="chip active" data-banca="COPS/UEL" onclick="setBanca(this)">COPS/UEL</button>
+        <span class="chip-coming">SUS/SP</span>
+        <span class="chip-coming">FHEMIG</span>
+        <span class="chip-coming">UERJ</span>
+        <span class="chip-coming">USP</span>
+        <span class="chip-coming">FMUSP</span>
+      </div>
+    </div>
+
+    <!-- ESPECIALIDADES -->
+    <div class="panel-section">
+      <div class="section-label">Especialidade</div>
       <div class="chips" id="chips-esp"></div>
     </div>
-    <div class="filter-section">
-      <span class="filter-label">Anos da prova</span>
+
+    <!-- ANOS -->
+    <div class="panel-section">
+      <div class="section-label">Ano da prova</div>
       <div class="chips" id="chips-ano"></div>
     </div>
-    <div class="filter-section">
-      <span class="filter-label">Modo de estudo</span>
+
+    <!-- MODO -->
+    <div class="panel-section">
+      <div class="section-label">Modo de estudo</div>
       <div class="mode-grid">
         <button class="mode-btn active" data-mode="adaptive" onclick="setMode(this)">
           <span class="mode-icon">🧠</span>
           <div class="mode-title">Adaptativo</div>
-          <div class="mode-desc">Prioriza suas maiores fraquezas (SM-2)</div>
+          <div class="mode-desc">SM-2 — prioriza suas fraquezas</div>
         </button>
         <button class="mode-btn" data-mode="random" onclick="setMode(this)">
           <span class="mode-icon">🎲</span>
           <div class="mode-title">Aleatório</div>
-          <div class="mode-desc">Questões em ordem aleatória</div>
+          <div class="mode-desc">Ordem totalmente aleatória</div>
         </button>
         <button class="mode-btn" data-mode="sequential" onclick="setMode(this)">
           <span class="mode-icon">📋</span>
@@ -184,22 +749,54 @@
         <button class="mode-btn" data-mode="weak" onclick="setMode(this)">
           <span class="mode-icon">🎯</span>
           <div class="mode-title">Pontos fracos</div>
-          <div class="mode-desc">Questões com menos de 60% de acerto</div>
+          <div class="mode-desc">Menos de 60% de acerto</div>
         </button>
       </div>
     </div>
-    <div class="stat-bar">
-      <div class="stat"><div class="stat-n" id="stat-total">—</div><div class="stat-l">questões</div></div>
-      <div class="stat"><div class="stat-n" id="stat-feitas">—</div><div class="stat-l">respondidas</div></div>
-      <div class="stat"><div class="stat-n" id="stat-acerto">—</div><div class="stat-l">% acerto</div></div>
+
+    <!-- QTY -->
+    <div class="panel-section">
+      <div class="section-label">Quantidade de questões</div>
+      <div class="chips" id="chips-qty">
+        <button class="chip" data-qty="10" onclick="setQty(this)">10</button>
+        <button class="chip active" data-qty="20" onclick="setQty(this)">20</button>
+        <button class="chip" data-qty="30" onclick="setQty(this)">30</button>
+        <button class="chip" data-qty="50" onclick="setQty(this)">50</button>
+        <button class="chip all-chip" data-qty="0" onclick="setQty(this)">TODAS</button>
+      </div>
+      <div class="qty-row">
+        <span class="qty-label">OU DIGITE:</span>
+        <input class="qty-input" id="qty-custom" type="number" min="1" max="999" placeholder="ex: 45" oninput="setQtyCustom(this)">
+        <span class="qty-available" id="qty-available"></span>
+      </div>
     </div>
-    <button class="btn-start" id="btn-start" onclick="startQuiz()">Iniciar simulado</button>
+
+    <!-- STATS -->
+    <div class="stat-bar">
+      <div class="stat">
+        <div class="stat-n" id="stat-total">—</div>
+        <div class="stat-l">no banco</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="stat-feitas">—</div>
+        <div class="stat-l">respondidas</div>
+      </div>
+      <div class="stat">
+        <div class="stat-n" id="stat-acerto">—</div>
+        <div class="stat-l">% acerto</div>
+      </div>
+    </div>
+
+    <div class="panel-section" style="padding:0;border-bottom:none;">
+      <button class="btn-start" id="btn-start" onclick="startQuiz()">INICIAR SIMULADO ▶</button>
+    </div>
   </div>
 </div>
 
-<!-- QUIZ -->
+<!-- ══ QUIZ ══ -->
 <div id="screen-quiz">
   <div class="quiz-header">
+    <div class="quiz-logo">TutorIA</div>
     <div class="score-pill">
       <span class="score-c" id="hdr-correct">✓ 0</span>
       <span class="score-e" id="hdr-wrong">✗ 0</span>
@@ -211,65 +808,70 @@
       </div>
       <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
     </div>
-    <button class="btn-quit" onclick="goHome()">Sair</button>
+    <button class="btn-quit" onclick="goHome()">SAIR ✕</button>
   </div>
   <div class="quiz-body">
     <div class="question-card">
       <div class="q-meta" id="q-meta"></div>
+      <div class="q-number" id="q-number"></div>
       <div class="q-text" id="q-text"></div>
       <div class="options" id="q-options"></div>
       <div class="feedback" id="q-feedback"></div>
-      <button class="btn-next" id="btn-next" onclick="nextQuestion()">Próxima questão →</button>
+      <button class="btn-next" id="btn-next" onclick="nextQuestion()">PRÓXIMA ▶</button>
       <div class="sr-indicator" id="sr-indicator"></div>
     </div>
   </div>
 </div>
 
-<!-- RESULTADO -->
+<!-- ══ RESULTADO ══ -->
 <div id="screen-result">
   <div class="result-card">
-    <div class="result-score" id="res-score">0%</div>
-    <div class="result-label">de aproveitamento</div>
+    <div class="result-hero">
+      <div class="result-score" id="res-score">0%</div>
+      <div class="result-label">DE APROVEITAMENTO</div>
+    </div>
     <div class="result-grid">
-      <div class="result-stat"><div class="result-stat-n" id="res-correct" style="color:var(--green)">0</div><div class="result-stat-l">corretas</div></div>
-      <div class="result-stat"><div class="result-stat-n" id="res-wrong" style="color:var(--red)">0</div><div class="result-stat-l">erradas</div></div>
-      <div class="result-stat"><div class="result-stat-n" id="res-total" style="color:var(--accent)">0</div><div class="result-stat-l">total</div></div>
+      <div class="result-stat"><div class="result-stat-n" id="res-correct" style="color:var(--green)">0</div><div class="result-stat-l">CORRETAS</div></div>
+      <div class="result-stat"><div class="result-stat-n" id="res-wrong" style="color:var(--hot-pink)">0</div><div class="result-stat-l">ERRADAS</div></div>
+      <div class="result-stat"><div class="result-stat-n" id="res-total" style="color:var(--orange)">0</div><div class="result-stat-l">TOTAL</div></div>
     </div>
     <div class="result-breakdown">
-      <h3>Por especialidade</h3>
+      <h3>▶ Por especialidade</h3>
       <div id="res-breakdown"></div>
     </div>
-    <button class="btn-restart" onclick="goHome()">Nova sessão</button>
+    <button class="btn-restart" onclick="goHome()">NOVA SESSÃO ▶</button>
   </div>
 </div>
 
-<!-- MODAL SYNC -->
+<!-- ══ MODAL SYNC ══ -->
 <div class="modal-overlay" id="modal-sync" onclick="closeSyncModal(event)">
   <div class="modal">
-    <h2>⚙ Sincronização entre dispositivos</h2>
-    <p>Para acessar o mesmo progresso em outro computador ou celular, copie o seu <strong>Bin ID</strong> e cole no novo dispositivo.</p>
+    <div class="modal-body">
+      <p>Para acessar o mesmo progresso em outro dispositivo, copie seu <strong>Bin ID</strong> e cole no novo aparelho.</p>
 
-    <div class="modal-section">
-      <h3>Seu Bin ID atual</h3>
-      <div class="bin-id-display" id="modal-bin-id">—</div>
-      <div style="display:flex;gap:.6rem;">
-        <button class="btn-sm primary" onclick="copyBinId()">📋 Copiar</button>
-        <button class="btn-sm" onclick="copyFullLink()">🔗 Copiar link completo</button>
+      <div class="modal-section">
+        <h3>Seu Bin ID</h3>
+        <div class="bin-display" id="modal-bin-id">—</div>
+        <div class="modal-row">
+          <button class="btn-modal primary" onclick="copyBinId()">COPIAR ID</button>
+          <button class="btn-modal ghost" onclick="copyFullLink()">COPIAR LINK</button>
+        </div>
+        <div class="modal-hint">Guarde este ID para acessar seu progresso de qualquer dispositivo.</div>
       </div>
-      <div class="sync-hint">Guarde este ID. Com ele você acessa seu progresso de qualquer dispositivo.</div>
-    </div>
 
-    <div class="modal-section">
-      <h3>Importar progresso de outro dispositivo</h3>
-      <div class="modal-row">
-        <input class="modal-input" id="import-bin-id" placeholder="Cole o Bin ID aqui..." />
-        <button class="btn-sm primary" onclick="importBinId()">Importar</button>
+      <div class="modal-section">
+        <h3>Importar de outro dispositivo</h3>
+        <div class="modal-row">
+          <input class="modal-input" id="import-bin-id" placeholder="Cole o Bin ID aqui...">
+          <button class="btn-modal primary" onclick="importBinId()">IMPORTAR</button>
+        </div>
+        <div class="modal-msg" id="import-msg"></div>
+        <div class="modal-hint">O progresso atual será substituído pelo do Bin ID informado.</div>
       </div>
-      <div class="modal-msg" id="import-msg"></div>
-      <div class="sync-hint">Ao importar, o progresso deste dispositivo será substituído pelo do Bin ID informado.</div>
     </div>
-
-    <button class="btn-close" onclick="closeSyncModal()">Fechar</button>
+    <div class="modal-close-bar">
+      <button class="btn-modal ghost" onclick="closeSyncModal()">FECHAR ✕</button>
+    </div>
   </div>
 </div>
 
@@ -278,129 +880,179 @@ const BANCO = [{"a":2020,"n":10,"e":"Ginecologia/Obstetrícia","t":"Parto premat
 const MASTER_KEY = "$2a$10$ajXDKU7rjcyhKY5nxKlYgO3YQWv7fXwVv9Vt8oZRP9zpjj9aHE6Ya";
 const BIN_KEY = "uel_bin_id";
 
+// Bancas disponíveis (para expansão futura)
+const BANCAS = {
+  "COPS/UEL": BANCO   // futuras bancas virão aqui
+};
+
 let memory = {};
 let binId = localStorage.getItem(BIN_KEY) || null;
 let syncTimer = null;
+let selectedBanca = "COPS/UEL";
+let selectedEsp = new Set(), selectedAno = new Set();
+let mode = 'adaptive', qtyLimit = 20;
+let queue = [], current = 0, sessionCorrect = 0, sessionWrong = 0, answered = false;
 
-// ── MODAL ──
-function openSyncModal() {
-  document.getElementById('modal-bin-id').textContent = binId || 'Ainda não criado — inicie o simulado primeiro';
-  document.getElementById('modal-sync').classList.add('show');
-}
-function closeSyncModal(e) {
-  if (!e || e.target === document.getElementById('modal-sync')) {
-    document.getElementById('modal-sync').classList.remove('show');
-  }
-}
-function copyBinId() {
-  if (!binId) return;
-  navigator.clipboard.writeText(binId).then(() => {
-    const btn = event.target;
-    btn.textContent = '✓ Copiado!';
-    setTimeout(() => btn.textContent = '📋 Copiar', 2000);
-  });
-}
-function copyFullLink() {
-  if (!binId) return;
-  const url = window.location.href.split('?')[0] + '?bin=' + binId;
-  navigator.clipboard.writeText(url).then(() => {
-    const btn = event.target;
-    btn.textContent = '✓ Copiado!';
-    setTimeout(() => btn.textContent = '🔗 Copiar link completo', 2000);
-  });
-}
-async function importBinId() {
-  const input = document.getElementById('import-bin-id').value.trim();
-  const msg = document.getElementById('import-msg');
-  if (!input) { msg.textContent = 'Cole um Bin ID válido.'; msg.className = 'modal-msg msg-err'; return; }
-  msg.textContent = '⟳ Verificando...'; msg.className = 'modal-msg';
-  try {
-    const r = await fetch(`https://api.jsonbin.io/v3/b/${input}/latest`, {
-      headers: { "X-Master-Key": MASTER_KEY }
-    });
-    const d = await r.json();
-    if (d.record !== undefined) {
-      memory = d.record;
-      binId = input;
-      localStorage.setItem(BIN_KEY, binId);
-      document.getElementById('modal-bin-id').textContent = binId;
-      msg.textContent = '✓ Progresso importado com sucesso!';
-      msg.className = 'modal-msg msg-ok';
-      updateStats();
-      setSyncStatus('ok', `✓ Progresso importado (${Object.keys(memory).length} questões)`);
-    } else {
-      throw new Error('Bin não encontrado');
-    }
-  } catch(e) {
-    msg.textContent = '✗ Bin ID inválido ou sem acesso.';
-    msg.className = 'modal-msg msg-err';
-  }
-}
-
-// ── CLOUD SYNC ──
-async function loadCloud() {
-  // Verifica se Bin ID veio na URL (?bin=xxx)
-  const urlParams = new URLSearchParams(window.location.search);
-  const urlBin = urlParams.get('bin');
-  if (urlBin && urlBin !== binId) {
-    binId = urlBin;
-    localStorage.setItem(BIN_KEY, binId);
-  }
-
-  setSyncStatus('loading', '⟳ Carregando progresso...');
-  try {
-    if (!binId) {
-      const r = await fetch("https://api.jsonbin.io/v3/b", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Master-Key": MASTER_KEY,
-          "X-Bin-Name": "simulado-uel",
-          "X-Bin-Private": "true"
-        },
-        body: JSON.stringify({})
-      });
-      const d = await r.json();
-      if (d.metadata && d.metadata.id) {
-        binId = d.metadata.id;
-        localStorage.setItem(BIN_KEY, binId);
-        memory = {};
-        setSyncStatus('ok', '✓ Progresso em nuvem ativo');
-      } else throw new Error(JSON.stringify(d));
-    } else {
-      const r = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
-        headers: { "X-Master-Key": MASTER_KEY }
-      });
-      const d = await r.json();
-      memory = d.record || {};
-      const n = Object.keys(memory).length;
-      setSyncStatus('ok', `✓ Nuvem sincronizada (${n} questões)`);
-    }
-  } catch(e) {
-    try { memory = JSON.parse(localStorage.getItem('uel_memory') || '{}'); } catch { memory = {}; }
-    setSyncStatus('err', '⚠ Offline — usando memória local');
-    console.warn('JSONBin:', e);
-  }
+// ── BANCA ──
+function setBanca(btn) {
+  document.querySelectorAll('#chips-banca .chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  selectedBanca = btn.dataset.banca;
+  selectedEsp.clear(); selectedAno.clear();
+  rebuildFilters();
   updateStats();
 }
 
+function getBancoAtual() {
+  return BANCAS[selectedBanca] || BANCO;
+}
+
+function rebuildFilters() {
+  const banco = getBancoAtual();
+  const esps  = [...new Set(banco.map(q => q.e))].sort();
+  const anos  = [...new Set(banco.map(q => q.a))].sort();
+
+  const ce = document.getElementById('chips-esp');
+  const ca = document.getElementById('chips-ano');
+  ce.innerHTML = ''; ca.innerHTML = '';
+
+  // Especialidades
+  const allE = document.createElement('button');
+  allE.className = 'chip all-chip active'; allE.textContent = 'TODAS';
+  allE.onclick = () => { selectedEsp.clear(); refreshChips(ce, selectedEsp); updateStats(); };
+  ce.appendChild(allE);
+  esps.forEach(v => {
+    const b = document.createElement('button');
+    b.className = 'chip'; b.textContent = v; b.dataset.value = v;
+    b.onclick = () => {
+      if (selectedEsp.has(v)) selectedEsp.delete(v); else selectedEsp.add(v);
+      refreshChips(ce, selectedEsp); updateStats();
+    };
+    ce.appendChild(b);
+  });
+
+  // Anos
+  const allA = document.createElement('button');
+  allA.className = 'chip all-chip active'; allA.textContent = 'TODOS';
+  allA.onclick = () => { selectedAno.clear(); refreshChips(ca, selectedAno); updateStats(); };
+  ca.appendChild(allA);
+  anos.forEach(v => {
+    const b = document.createElement('button');
+    b.className = 'chip'; b.textContent = v; b.dataset.value = String(v);
+    b.onclick = () => {
+      const key = Number(v);
+      if (selectedAno.has(key)) selectedAno.delete(key); else selectedAno.add(key);
+      refreshChips(ca, selectedAno); updateStats();
+    };
+    ca.appendChild(b);
+  });
+}
+
+function refreshChips(container, set) {
+  container.querySelectorAll('.chip:not(.all-chip)').forEach(ch => {
+    const v = isNaN(ch.dataset.value) ? ch.dataset.value : Number(ch.dataset.value);
+    ch.classList.toggle('active', set.has(v));
+  });
+  const all = container.querySelector('.all-chip');
+  if (all) all.classList.toggle('active', set.size === 0);
+}
+
+// ── FILTERS ──
+function getFiltered() {
+  const banco = getBancoAtual();
+  return banco.filter(q =>
+    (selectedEsp.size === 0 || selectedEsp.has(q.e)) &&
+    (selectedAno.size === 0 || selectedAno.has(q.a))
+  );
+}
+
+function updateStats() {
+  const f = getFiltered();
+  let totalR = 0, totalC = 0;
+  f.forEach(q => { const c = getCard(`${q.a}_${q.n}`); totalR += c.total; totalC += c.correct; });
+  document.getElementById('stat-total').textContent  = f.length;
+  document.getElementById('stat-feitas').textContent = totalR;
+  document.getElementById('stat-acerto').textContent = totalR > 0 ? Math.round(totalC/totalR*100)+'%' : '—';
+  document.getElementById('btn-start').disabled = f.length === 0;
+  updateQtyLabel();
+}
+
+// ── QTY ──
+function setQty(btn) {
+  document.querySelectorAll('#chips-qty .chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  qtyLimit = Number(btn.dataset.qty);
+  document.getElementById('qty-custom').value = '';
+  updateQtyLabel();
+}
+function setQtyCustom(input) {
+  const v = parseInt(input.value);
+  document.querySelectorAll('#chips-qty .chip').forEach(c => c.classList.remove('active'));
+  qtyLimit = (!v || v < 1) ? 20 : v;
+  updateQtyLabel();
+}
+function updateQtyLabel() {
+  const max = getFiltered().length;
+  const n   = qtyLimit === 0 ? max : Math.min(qtyLimit, max);
+  const el  = document.getElementById('qty-available');
+  if (!el) return;
+  if (qtyLimit === 0) {
+    el.textContent = `${max} questões na sessão`; el.style.color = 'var(--green)';
+  } else if (qtyLimit > max) {
+    el.textContent = `só ${max} disponíveis — todas entrarão`; el.style.color = 'var(--yellow)';
+  } else {
+    el.textContent = `${n} de ${max} disponíveis`; el.style.color = 'var(--muted)';
+  }
+}
+
+// ── MODE ──
+function setMode(btn) {
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active'); mode = btn.dataset.mode;
+}
+
+// ── CLOUD ──
 function setSyncStatus(type, text) {
   const el = document.getElementById('sync-status');
-  el.textContent = text;
-  el.className = 'sync-status sync-' + (type === 'loading' ? 'loading' : type === 'ok' ? 'ok' : 'err');
+  const tx = document.getElementById('sync-text');
+  el.className = 'sync-pill ' + (type==='ok'?'ok':type==='err'?'err':'load');
+  tx.textContent = text;
+}
+
+async function loadCloud() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlBin = urlParams.get('bin');
+  if (urlBin && urlBin !== binId) { binId = urlBin; localStorage.setItem(BIN_KEY, binId); }
+  setSyncStatus('load','CARREGANDO...');
+  try {
+    if (!binId) {
+      const r = await fetch("https://api.jsonbin.io/v3/b", {
+        method:"POST",
+        headers:{"Content-Type":"application/json","X-Master-Key":MASTER_KEY,"X-Bin-Name":"tutoria-progresso","X-Bin-Private":"true"},
+        body:JSON.stringify({})
+      });
+      const d = await r.json();
+      if (d.metadata?.id) { binId = d.metadata.id; localStorage.setItem(BIN_KEY,binId); memory = {}; setSyncStatus('ok','NUVEM ATIVA'); }
+      else throw new Error();
+    } else {
+      const r = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`,{headers:{"X-Master-Key":MASTER_KEY}});
+      const d = await r.json();
+      memory = d.record || {};
+      const n = Object.keys(memory).length;
+      setSyncStatus('ok', n > 0 ? `SYNC OK — ${n} QS` : 'NUVEM ATIVA');
+    }
+  } catch(e) {
+    try { memory = JSON.parse(localStorage.getItem('uel_memory')||'{}'); } catch { memory={}; }
+    setSyncStatus('err','OFFLINE — LOCAL');
+  }
+  updateStats();
 }
 
 async function saveCloud() {
   const dot = document.querySelector('.sync-dot');
   if (dot) dot.className = 'sync-dot saving';
   try {
-    if (binId) {
-      await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", "X-Master-Key": MASTER_KEY },
-        body: JSON.stringify(memory)
-      });
-    }
+    if (binId) await fetch(`https://api.jsonbin.io/v3/b/${binId}`,{method:"PUT",headers:{"Content-Type":"application/json","X-Master-Key":MASTER_KEY},body:JSON.stringify(memory)});
     localStorage.setItem('uel_memory', JSON.stringify(memory));
     if (dot) dot.className = 'sync-dot ok';
   } catch(e) {
@@ -408,152 +1060,127 @@ async function saveCloud() {
     if (dot) dot.className = 'sync-dot err';
   }
 }
+function scheduleSave() { clearTimeout(syncTimer); syncTimer = setTimeout(saveCloud, 2000); }
 
-function scheduleSave() {
-  clearTimeout(syncTimer);
-  syncTimer = setTimeout(saveCloud, 2000);
+// ── MODAL ──
+function openSyncModal() {
+  document.getElementById('modal-bin-id').textContent = binId || 'Inicie o simulado primeiro';
+  document.getElementById('modal-sync').classList.add('show');
+}
+function closeSyncModal(e) {
+  if (!e || e.target === document.getElementById('modal-sync')) document.getElementById('modal-sync').classList.remove('show');
+}
+function copyBinId() {
+  if (!binId) return;
+  navigator.clipboard.writeText(binId).then(() => { event.target.textContent='COPIADO!'; setTimeout(()=>event.target.textContent='COPIAR ID',2000); });
+}
+function copyFullLink() {
+  if (!binId) return;
+  const url = window.location.href.split('?')[0]+'?bin='+binId;
+  navigator.clipboard.writeText(url).then(() => { event.target.textContent='COPIADO!'; setTimeout(()=>event.target.textContent='COPIAR LINK',2000); });
+}
+async function importBinId() {
+  const input = document.getElementById('import-bin-id').value.trim();
+  const msg   = document.getElementById('import-msg');
+  if (!input) { msg.textContent='Cole um Bin ID válido.'; msg.className='modal-msg msg-err'; return; }
+  msg.textContent='VERIFICANDO...'; msg.className='modal-msg';
+  try {
+    const r = await fetch(`https://api.jsonbin.io/v3/b/${input}/latest`,{headers:{"X-Master-Key":MASTER_KEY}});
+    const d = await r.json();
+    if (d.record !== undefined) {
+      memory = d.record; binId = input; localStorage.setItem(BIN_KEY, binId);
+      document.getElementById('modal-bin-id').textContent = binId;
+      msg.textContent = 'IMPORTADO COM SUCESSO!'; msg.className = 'modal-msg msg-ok';
+      updateStats(); setSyncStatus('ok','SYNC OK');
+    } else throw new Error();
+  } catch(e) { msg.textContent='BIN ID INVÁLIDO.'; msg.className='modal-msg msg-err'; }
 }
 
 // ── SM-2 ──
-function getCard(key) {
-  return memory[key] || { correct:0, total:0, ease:2.5, interval:0, nextReview:0 };
-}
+function getCard(key) { return memory[key] || {correct:0,total:0,ease:2.5,interval:0,nextReview:0}; }
 function sm2Update(card, correct) {
   card.total++;
   const q = correct ? 5 : 1;
   if (q >= 3) {
     card.correct++;
-    if (card.interval === 0) card.interval = 1;
-    else if (card.interval === 1) card.interval = 6;
-    else card.interval = Math.round(card.interval * card.ease);
-    card.ease = Math.max(1.3, card.ease + 0.1 - (5-q)*(0.08+(5-q)*0.02));
-  } else {
-    card.interval = 1;
-    card.ease = Math.max(1.3, card.ease - 0.2);
-  }
-  card.nextReview = Date.now() + card.interval * 86400000;
+    if (card.interval===0) card.interval=1;
+    else if (card.interval===1) card.interval=6;
+    else card.interval=Math.round(card.interval*card.ease);
+    card.ease=Math.max(1.3, card.ease+0.1-(5-q)*(0.08+(5-q)*0.02));
+  } else { card.interval=1; card.ease=Math.max(1.3,card.ease-0.2); }
+  card.nextReview = Date.now() + card.interval*86400000;
   return card;
 }
 
-// ── ESTADO ──
-let selectedEsp = new Set(), selectedAno = new Set();
-let mode = 'adaptive', queue = [], current = 0;
-let sessionCorrect = 0, sessionWrong = 0, answered = false;
-const ESPECIALIDADES = [...new Set(BANCO.map(q => q.e))].sort();
-const ANOS = [...new Set(BANCO.map(q => q.a))].sort();
-
-function init() {
-  buildChips('chips-esp', ESPECIALIDADES, selectedEsp);
-  buildChips('chips-ano', ANOS, selectedAno);
-  loadCloud();
-}
-
-function buildChips(id, items, set) {
-  const c = document.getElementById(id);
-  const isAno = id === 'chips-ano';
-  const allBtn = document.createElement('button');
-  allBtn.className = 'chip all active';
-  allBtn.textContent = isAno ? 'Todos' : 'Todas';
-  allBtn.onclick = () => { set.clear(); refreshChips(c, set); updateStats(); };
-  c.appendChild(allBtn);
-  items.forEach(v => {
-    const btn = document.createElement('button');
-    btn.className = 'chip'; btn.textContent = v; btn.dataset.value = String(v);
-    btn.onclick = () => {
-      const key = isAno ? Number(v) : v;
-      if (set.has(key)) set.delete(key); else set.add(key);
-      refreshChips(c, set); updateStats();
-    };
-    c.appendChild(btn);
-  });
-}
-function refreshChips(container, set) {
-  container.querySelectorAll('.chip:not(.all)').forEach(ch => {
-    const v = isNaN(ch.dataset.value) ? ch.dataset.value : Number(ch.dataset.value);
-    ch.classList.toggle('active', set.has(v));
-  });
-  container.querySelector('.all').classList.toggle('active', set.size === 0);
-}
-
-function getFiltered() {
-  return BANCO.filter(q =>
-    (selectedEsp.size === 0 || selectedEsp.has(q.e)) &&
-    (selectedAno.size === 0 || selectedAno.has(q.a))
-  );
-}
-
-function updateStats() {
-  const filtered = getFiltered();
-  let totalR = 0, totalC = 0;
-  filtered.forEach(q => { const c = getCard(`${q.a}_${q.n}`); totalR += c.total; totalC += c.correct; });
-  document.getElementById('stat-total').textContent = filtered.length;
-  document.getElementById('stat-feitas').textContent = totalR;
-  document.getElementById('stat-acerto').textContent = totalR > 0 ? Math.round(totalC/totalR*100)+'%' : '—';
-  document.getElementById('btn-start').disabled = filtered.length === 0;
-}
-
-function setMode(btn) {
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active'); mode = btn.dataset.mode;
-}
-
+// ── SHUFFLE ──
 function shuffle(arr) {
-  for (let i = arr.length-1; i > 0; i--) { const j = Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+  for (let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}
   return arr;
 }
 
+// ── START QUIZ ──
 function startQuiz() {
   let pool = getFiltered();
   const now = Date.now();
-  if (mode === 'weak') {
-    const w = pool.filter(q => { const c = getCard(`${q.a}_${q.n}`); return c.total===0||c.correct/c.total<0.6; });
+  if (mode==='weak') {
+    const w = pool.filter(q=>{const c=getCard(`${q.a}_${q.n}`);return c.total===0||c.correct/c.total<0.6;});
     pool = w.length > 0 ? w : pool;
   }
-  if (mode === 'adaptive') {
-    const due  = pool.filter(q => { const c = getCard(`${q.a}_${q.n}`); return c.total>0&&c.nextReview<=now; });
-    const newq = pool.filter(q => getCard(`${q.a}_${q.n}`).total===0);
-    const fut  = pool.filter(q => { const c = getCard(`${q.a}_${q.n}`); return c.total>0&&c.nextReview>now; });
+  if (mode==='adaptive') {
+    const due  = pool.filter(q=>{const c=getCard(`${q.a}_${q.n}`);return c.total>0&&c.nextReview<=now;});
+    const newq = pool.filter(q=>getCard(`${q.a}_${q.n}`).total===0);
+    const fut  = pool.filter(q=>{const c=getCard(`${q.a}_${q.n}`);return c.total>0&&c.nextReview>now;});
     pool = [...shuffle(due),...shuffle(newq),...shuffle(fut)];
-  } else if (mode === 'sequential') {
-    pool = [...pool].sort((a,b) => a.a-b.a||a.n-b.n);
+  } else if (mode==='sequential') {
+    pool = [...pool].sort((a,b)=>a.a-b.a||a.n-b.n);
   } else pool = shuffle([...pool]);
+  if (qtyLimit > 0 && pool.length > qtyLimit) pool = pool.slice(0, qtyLimit);
   queue=pool; current=0; sessionCorrect=0; sessionWrong=0;
-  document.getElementById('screen-home').style.display = 'none';
-  document.getElementById('screen-quiz').style.display = 'flex';
+  document.getElementById('screen-home').style.display='none';
+  document.getElementById('screen-quiz').style.display='flex';
   renderQuestion();
 }
 
+// ── RENDER QUESTION ──
 function renderQuestion() {
   if (current >= queue.length) { showResult(); return; }
   answered = false;
   const q = queue[current];
   const card = getCard(`${q.a}_${q.n}`);
+
   document.getElementById('q-meta').innerHTML =
-    `<span class="badge badge-esp">${q.e}</span>
+    `<span class="badge badge-banca">${selectedBanca}</span>
+     <span class="badge badge-esp">${q.e}</span>
      <span class="badge badge-ano">UEL ${q.a}</span>
      ${q.t?`<span class="badge badge-tema">${q.t}</span>`:''}
-     <span class="sync-dot ok" title="Progresso salvo na nuvem"></span>`;
+     <span class="sync-dot ok" title="Progresso salvo"></span>`;
+  document.getElementById('q-number').textContent = `QUESTÃO ${q.n} · ${q.a}`;
   document.getElementById('q-text').textContent = q.q;
+
   const opts = document.getElementById('q-options');
   opts.innerHTML = '';
-  ['a','b','c','d','e'].forEach((l,i) => {
+  ['a','b','c','d','e'].forEach((l,i)=>{
     const text = q.o[i];
     if (!text||!text.trim()) return;
     const div = document.createElement('div');
     div.className='option'; div.dataset.letter=l;
     div.innerHTML=`<div class="option-letter">${l.toUpperCase()}</div><div class="option-text">${text}</div>`;
-    div.onclick = () => selectAnswer(l, q);
+    div.onclick=()=>selectAnswer(l,q);
     opts.appendChild(div);
   });
+
   document.getElementById('q-feedback').className='feedback';
   document.getElementById('btn-next').className='btn-next';
+
   const sri = document.getElementById('sr-indicator');
   if (card.total===0) {
-    sri.innerHTML='<span class="sr-new">● Nova questão</span>';
+    sri.innerHTML='<span class="sr-new">◈ NOVA QUESTÃO</span>';
   } else {
     const pct = Math.round(card.correct/card.total*100);
-    sri.innerHTML=`<span class="${pct>=70?'sr-known':pct>=40?'sr-review':'sr-new'}">Respondida ${card.total}x · ${pct}% de acerto</span>`;
+    const cls = pct>=70?'sr-known':pct>=40?'sr-review':'sr-new';
+    sri.innerHTML=`<span class="${cls}">RESPONDIDA ${card.total}× · ${pct}% DE ACERTO</span>`;
   }
+
   const pct = Math.round(current/queue.length*100);
   document.getElementById('prog-text').textContent=`${current+1} / ${queue.length}`;
   document.getElementById('prog-pct').textContent=pct+'%';
@@ -566,7 +1193,7 @@ function selectAnswer(letter, q) {
   if (answered) return;
   answered = true;
   const correct = letter === q.g.toLowerCase();
-  document.querySelectorAll('.option').forEach(opt => {
+  document.querySelectorAll('.option').forEach(opt=>{
     opt.classList.add('locked');
     if (opt.dataset.letter===q.g.toLowerCase()) opt.classList.add('correct');
     else if (opt.dataset.letter===letter&&!correct) opt.classList.add('wrong');
@@ -574,11 +1201,11 @@ function selectAnswer(letter, q) {
   const fb = document.getElementById('q-feedback');
   if (correct) {
     fb.className='feedback correct show';
-    fb.textContent=`✓ Correto! A resposta é ${q.g.toUpperCase()}.`;
+    fb.textContent=`▶ CORRETO — RESPOSTA ${q.g.toUpperCase()}`;
     sessionCorrect++;
   } else {
     fb.className='feedback wrong show';
-    fb.textContent=`✗ Incorreto. A resposta correta é ${q.g.toUpperCase()}.`;
+    fb.textContent=`✕ INCORRETO — CORRETA: ${q.g.toUpperCase()}`;
     sessionWrong++;
   }
   const key=`${q.a}_${q.n}`;
@@ -601,10 +1228,10 @@ function showResult() {
   document.getElementById('res-wrong').textContent=sessionWrong;
   document.getElementById('res-total').textContent=total;
   const espBreak={};
-  getFiltered().forEach(q => {
+  getFiltered().forEach(q=>{
     const c=getCard(`${q.a}_${q.n}`);
-    if (c.total===0) return;
-    if (!espBreak[q.e]) espBreak[q.e]={c:0,t:0};
+    if(c.total===0)return;
+    if(!espBreak[q.e])espBreak[q.e]={c:0,t:0};
     espBreak[q.e].c+=c.correct; espBreak[q.e].t+=c.total;
   });
   const bd=document.getElementById('res-breakdown');
@@ -614,7 +1241,7 @@ function showResult() {
     const cls=p>=70?'pct-good':p>=50?'pct-mid':'pct-bad';
     const row=document.createElement('div');
     row.className='breakdown-row';
-    row.innerHTML=`<span>${esp}</span><span class="breakdown-pct ${cls}">${p}% (${t} resp.)</span>`;
+    row.innerHTML=`<span>${esp}</span><span class="breakdown-pct ${cls}">${p}% (${t}×)</span>`;
     bd.appendChild(row);
   });
 }
@@ -626,7 +1253,9 @@ function goHome() {
   updateStats();
 }
 
-init();
+// ── INIT ──
+rebuildFilters();
+loadCloud();
 </script>
 </body>
 </html>
