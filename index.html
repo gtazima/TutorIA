@@ -1047,14 +1047,11 @@ async function generateFlashcardsFromPool(questoes) {
     loadEl.innerHTML = `<div class="flash-loading"><div class="flash-loading-text">&#10227; GERANDO FLASHCARD ${i+1} DE ${erros.length}...</div></div>`;
     const gabarito = q.o[q.g.charCodeAt(0)-65] || q.g;
     const alts = q.o.map((o,j) => o ? String.fromCharCode(65+j)+') '+o : null).filter(Boolean).join('\n');
-    const prompt = `Você é professor de medicina para residência médica no Brasil. Crie UM flashcard de estudo de alta qualidade.
+    const prompt = `Crie UM flashcard de residência médica. RESPONDA APENAS COM JSON, sem texto fora.
 
-REGRAS:
-- FRENTE: pergunta clínica ORIGINAL sobre o conceito central. NÃO copie o enunciado. Use formato: "Qual a conduta em...", "Como diagnosticar...", "Por que usar X em vez de Y..."
-- VERSO: (1) resposta direta, (2) raciocínio clínico com porquê, (3) diferencial ou macete para prova
-- Para questões de associação: foque no conceito mais testável
+FRENTE: pergunta clínica direta e específica. Use termos do enunciado (nome da doença, procedimento, fármaco). Exemplo ruim: "Qual a conduta cirúrgica?" — Exemplo bom: "Quando indicar herniorrafia inguinal em crianças?"
+VERSO: máximo 2 frases. Resposta direta + 1 diferencial ou macete. Sem introduções, sem repetir a pergunta.
 
-RESPONDA APENAS COM UM OBJETO JSON. Sem nenhum texto fora do JSON.
 Formato: {"frente":"...","verso":"...","ano":${q.a},"num":${q.n}}
 
 Questão UEL ${q.a} nº${q.n}:
