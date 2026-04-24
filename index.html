@@ -1040,14 +1040,23 @@ async function generateFlashcardsFromPool(questoes) {
   const erros = questoes.slice(0, 5);
   const questoesStr = erros.map((q,i) => {
     const gabarito = q.o[q.g.charCodeAt(0)-65] || q.g;
-    return `${i+1}. [UEL ${q.a} Q${q.n}]\nCaso clínico: ${q.q.substring(0,300)}\nResposta correta (${q.g}): ${gabarito.substring(0,150)}`;
-  }).join('\n\n');
-  const prompt = `Você é professor de medicina. Crie flashcards de alta qualidade para residência médica.
+    const alts = q.o.map((o,i) => o ? String.fromCharCode(65+i)+') '+o.substring(0,80) : null).filter(Boolean).join(' | ');
+    return `Q${i+1} [UEL ${q.a} nº${q.n}]\nEnunciado: ${q.q.substring(0,400)}\nAlternativas: ${alts}\nGabarito: (${q.g}) ${gabarito.substring(0,120)}`;
+  }).join('\n\n---\n\n');
+  const prompt = `Você é um professor experiente de medicina preparando candidatos para residência médica no Brasil.
 
-RESPONDA APENAS COM O ARRAY JSON. Nenhum texto antes ou depois.
+Para cada questão abaixo, crie UM flashcard de estudo de alta qualidade.
 
-Formato obrigatório:
-[{"frente":"Pergunta clínica direta testando o conceito central (ex: Qual o diagnóstico / conduta / mecanismo em...)","verso":"Resposta objetiva com raciocínio clínico: diagnóstico/conduta correta e por que as outras alternativas estão erradas. 3-4 frases.","ano":2020,"num":1}]
+REGRAS OBRIGATÓRIAS:
+- A FRENTE deve ser uma PERGUNTA CLÍNICA ORIGINAL que testa o mesmo conceito da questão — NÃO copie o enunciado. Exemplos: "Qual a conduta inicial em...", "Quais os critérios diagnósticos de...", "Por que se usa X e não Y em..."
+- O VERSO deve ter: (1) resposta direta e objetiva, (2) raciocínio clínico explicando o porquê, (3) um diferencial ou ponto de atenção relevante para a prova
+- Para questões de associação/relacione: foque no conceito mais importante da lista
+- Para casos clínicos: formule a pergunta baseada no diagnóstico ou conduta — não no caso específico
+
+RESPONDA APENAS COM O ARRAY JSON. Sem texto antes ou depois, sem markdown.
+
+Formato:
+[{"frente":"Pergunta clínica direta e original","verso":"Resposta completa com raciocínio: conceito correto + por que é importante + diferencial relevante","ano":2020,"num":1}]
 
 Questões:
 ${questoesStr}`;
@@ -1056,7 +1065,7 @@ ${questoesStr}`;
     const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${groqKey}`},
-      body:JSON.stringify({model:"llama-3.1-8b-instant",temperature:0.3,max_tokens:2000,messages:[{role:"user",content:prompt}]})
+      body:JSON.stringify({model:"llama-3.1-8b-instant",temperature:0.3,max_tokens:2500,messages:[{role:"user",content:prompt}]})
     });
     const d = await r.json();
     if(d.error) throw new Error(d.error.message || d.error.error?.message || 'Erro Groq');
