@@ -746,7 +746,7 @@ function openFlashSetup() {
   const weak = getWeakQuestions(pool, 999);
   const respondidas = weak.filter(q => getCard(`${q.a}_${q.n}`).total > 0).length;
   document.getElementById('flash-setup-pool').textContent = `${weak.length} questões disponíveis (${respondidas} com histórico de acerto)`;
-  document.getElementById('flash-setup-qty').value = Math.min(15, weak.length);
+  document.getElementById('flash-setup-qty').value = Math.min(5, weak.length);
   // Mostrar aviso de chave Groq
   const aviso = document.getElementById('flash-groq-aviso');
   if(aviso) aviso.style.display = groqKey ? 'none' : 'block';
@@ -1037,15 +1037,15 @@ async function generateFlashcardsFromPool(questoes) {
     return;
   }
 
-  const erros = questoes.slice(0, 10);
-  const questoesStr = erros.map((q,i) => `${i+1}. [UEL ${q.a} Q${q.n}] Enunciado: ${q.q.substring(0,250)}... Alternativas: ${q.o.filter(Boolean).map((o,i)=>String.fromCharCode(65+i)+') '+o).join(' | ')} Gabarito: ${q.g}`).join('\n\n');
-  const prompt = `Você é um professor de medicina. Para cada questão abaixo, crie um flashcard de estudo focado no conceito médico central testado. Responda APENAS em JSON válido, array sem markdown.\n\nFormato:\n[{"frente":"Pergunta direta sobre o conceito médico central","verso":"Resposta completa explicando o gabarito e o raciocínio clínico","ano":2020,"num":1}]\n\nQuestões:\n${questoesStr}`;
+  const erros = questoes.slice(0, 5);
+  const questoesStr = erros.map((q,i) => `${i+1}. [UEL ${q.a} Q${q.n}] ${q.q.substring(0,120)} | Gabarito: ${q.g}`).join('\n');
+  const prompt = `Professor de medicina. Crie flashcards em JSON para cada questão. Apenas JSON, sem markdown.\nFormato: [{"frente":"pergunta curta sobre o conceito","verso":"explicação do gabarito em 2-3 frases","ano":2020,"num":1}]\nQuestões:\n${questoesStr}`;
 
   try {
     const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${groqKey}`},
-      body:JSON.stringify({model:"llama-3.1-8b-instant",temperature:0.3,max_tokens:4000,messages:[{role:"user",content:prompt}]})
+      body:JSON.stringify({model:"llama-3.1-8b-instant",temperature:0.3,max_tokens:1500,messages:[{role:"user",content:prompt}]})
     });
     const d = await r.json();
     if(d.error) throw new Error(d.error.message || d.error.error?.message || 'Erro Groq');
