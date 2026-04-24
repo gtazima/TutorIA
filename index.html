@@ -673,7 +673,7 @@ async function importBin() {
   } catch(e) { msg.textContent='BIN ID INVÁLIDO.'; msg.className='modal-msg msg-err'; }
 }
 
-// ══ GEMINI MODAL ══
+// ══ GROQ MODAL ══
 function openGroqModal() {
   const inp = document.getElementById('groq-key-input');
   if(inp) inp.value = groqKey;
@@ -747,7 +747,7 @@ function openFlashSetup() {
   const respondidas = weak.filter(q => getCard(`${q.a}_${q.n}`).total > 0).length;
   document.getElementById('flash-setup-pool').textContent = `${weak.length} questões disponíveis (${respondidas} com histórico de acerto)`;
   document.getElementById('flash-setup-qty').value = Math.min(15, weak.length);
-  // Mostrar aviso de chave Gemini
+  // Mostrar aviso de chave Groq
   const aviso = document.getElementById('flash-groq-aviso');
   if(aviso) aviso.style.display = groqKey ? 'none' : 'block';
   document.getElementById('modal-flash-setup').classList.add('show');
@@ -1004,7 +1004,7 @@ async function generateInsights(correto, errado, anoBreak) {
   }
 }
 
-// ══ FLASHCARDS VIA GEMINI ══
+// ══ FLASHCARDS VIA GROQ ══
 let flashCards = [], flashIdx = 0;
 
 // Chamado a partir do resultado (questões erradas da sessão)
@@ -1021,23 +1021,23 @@ async function generateFlashcardsFromPool(questoes) {
   if(!groqKey) {
     document.getElementById('flash-body').innerHTML = `
       <div style="text-align:center;padding:2rem;max-width:500px">
-        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--orange);margin-bottom:1rem">CHAVE GEMINI NECESSÁRIA</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--orange);margin-bottom:1rem">CHAVE GROQ NECESSÁRIA</div>
         <div style="font-family:'Barlow',sans-serif;font-size:.9rem;color:var(--text-alt);line-height:1.7;margin-bottom:1.5rem">
-          Os flashcards são gerados por IA gratuitamente via Google Gemini.<br>Você precisa de uma chave de API (gratuita, sem cartão de crédito).
+          Os flashcards são gerados por IA gratuitamente via Groq.<br>Você precisa de uma chave de API (gratuita, sem cartão de crédito).
         </div>
         <div style="font-family:'Share Tech Mono',monospace;font-size:.75rem;color:var(--muted);border:1px solid var(--border);padding:1rem;margin-bottom:1.5rem;text-align:left">
-          1. Acesse <strong style="color:var(--cyan)">aistudio.google.com</strong><br>
-          2. Clique em <strong>Get API Key</strong> → <strong>Create API Key</strong><br>
-          3. Copie a chave gerada<br>
+          1. Acesse <strong><a href="https://console.groq.com/keys" target="_blank" style="color:var(--cyan)">console.groq.com/keys</a></strong><br>
+          2. Fa&ccedil;a login com Google ou crie uma conta<br>
+          3. Clique em <strong>Create API Key</strong><br>
           4. Cole abaixo e salve
         </div>
-        <button class="btn-start" style="max-width:300px;font-size:1rem;padding:.9rem" onclick="openGroqModal()">&#9881; CONFIGURAR CHAVE GEMINI</button>
+        <button class="btn-start" style="max-width:300px;font-size:1rem;padding:.9rem" onclick="openGroqModal()">&#9881; CONFIGURAR CHAVE GROQ</button>
         <div style="margin-top:1rem"><button class="btn-ghost" onclick="goHome()">VOLTAR</button></div>
       </div>`;
     return;
   }
 
-  const erros = questoes.slice(0, 15);
+  const erros = questoes.slice(0, 10);
   const questoesStr = erros.map((q,i) => `${i+1}. [UEL ${q.a} Q${q.n}] Enunciado: ${q.q.substring(0,250)}... Alternativas: ${q.o.filter(Boolean).map((o,i)=>String.fromCharCode(65+i)+') '+o).join(' | ')} Gabarito: ${q.g}`).join('\n\n');
   const prompt = `Você é um professor de medicina. Para cada questão abaixo, crie um flashcard de estudo focado no conceito médico central testado. Responda APENAS em JSON válido, array sem markdown.\n\nFormato:\n[{"frente":"Pergunta direta sobre o conceito médico central","verso":"Resposta completa explicando o gabarito e o raciocínio clínico","ano":2020,"num":1}]\n\nQuestões:\n${questoesStr}`;
 
@@ -1045,7 +1045,7 @@ async function generateFlashcardsFromPool(questoes) {
     const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${groqKey}`},
-      body:JSON.stringify({model:"llama-3.1-8b-instant",temperature:0.3,max_tokens:3000,messages:[{role:"user",content:prompt}]})
+      body:JSON.stringify({model:"llama-3.1-8b-instant",temperature:0.3,max_tokens:4000,messages:[{role:"user",content:prompt}]})
     });
     const d = await r.json();
     if(d.error) throw new Error(d.error.message || d.error.error?.message || 'Erro Groq');
@@ -1055,21 +1055,19 @@ async function generateFlashcardsFromPool(questoes) {
     flashIdx = 0;
     renderFlashcard();
   } catch(e) {
-    const isAllowlist = e.message && e.message.includes('fetch');
     document.getElementById('flash-body').innerHTML = `
       <div style="text-align:center;padding:2rem;max-width:520px">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--accent);margin-bottom:.8rem">ERRO AO GERAR</div>
         <div style="font-family:'Barlow',sans-serif;font-size:.88rem;color:var(--text-alt);line-height:1.7;margin-bottom:1.2rem;text-align:left;background:var(--bg2);border:1px solid var(--border);padding:1rem">
-          <strong style="color:var(--orange)">Causa mais comum:</strong> sua chave Gemini tem restrição de domínio ativada.<br><br>
-          <strong>Como corrigir (30 segundos):</strong><br>
-          1. Acesse <a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--cyan)">aistudio.google.com/apikey</a><br>
-          2. Clique nos 3 pontos ao lado da sua chave → <strong>Edit key</strong><br>
-          3. Em <strong>API restrictions</strong>, selecione <strong>None</strong><br>
-          4. Salve e tente novamente
+          <strong style="color:var(--orange)">Erro ao conectar com o Groq.</strong><br><br>
+          Verifique se sua chave está correta e tente novamente.<br>
+          Chaves Groq começam com <strong>gsk_</strong><br><br>
+          Se ainda não tem uma chave:<br>
+          Acesse <a href="https://console.groq.com/keys" target="_blank" style="color:var(--cyan)">console.groq.com/keys</a> e crie gratuitamente.
         </div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:.65rem;color:var(--muted);margin-bottom:1.2rem">${e.message || 'Failed to fetch'}</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:.65rem;color:var(--muted);margin-bottom:1.2rem">${e.message || 'Erro desconhecido'}</div>
         <div style="display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap">
-          <button class="btn-ghost" onclick="openGroqModal()">&#9881; TROCAR CHAVE</button>
+          <button class="btn-ghost" onclick="openGroqModal()">&#9881; CONFIGURAR CHAVE</button>
           <button class="btn-ghost" onclick="goHome()">VOLTAR</button>
         </div>
       </div>`;
