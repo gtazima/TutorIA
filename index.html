@@ -1023,11 +1023,11 @@ async function generateFlashcardsFromPool(questoes) {
       <div style="text-align:center;padding:2rem;max-width:500px">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:1.8rem;color:var(--orange);margin-bottom:1rem">CHAVE GROQ NECESSÁRIA</div>
         <div style="font-family:'Barlow',sans-serif;font-size:.9rem;color:var(--text-alt);line-height:1.7;margin-bottom:1.5rem">
-          Os flashcards são gerados por IA gratuitamente via Groq.<br>Você precisa de uma chave de API (gratuita, sem cartão de crédito).
+          Os flashcards são gerados gratuitamente via Groq.<br>Você precisa de uma chave de API (sem cartão de crédito).
         </div>
         <div style="font-family:'Share Tech Mono',monospace;font-size:.75rem;color:var(--muted);border:1px solid var(--border);padding:1rem;margin-bottom:1.5rem;text-align:left">
           1. Acesse <strong><a href="https://console.groq.com/keys" target="_blank" style="color:var(--cyan)">console.groq.com/keys</a></strong><br>
-          2. Fa&ccedil;a login com Google ou crie uma conta<br>
+          2. Faça login com Google ou crie uma conta<br>
           3. Clique em <strong>Create API Key</strong><br>
           4. Cole abaixo e salve
         </div>
@@ -1037,63 +1037,79 @@ async function generateFlashcardsFromPool(questoes) {
     return;
   }
 
+  // Uma chamada por questão — elimina problema de múltiplos JSONs
   const erros = questoes.slice(0, 5);
-  const questoesStr = erros.map((q,i) => {
+  flashCards = []; flashIdx = 0;
+  const loadEl = document.getElementById('flash-body');
+
+  for(let i = 0; i < erros.length; i++) {
+    const q = erros[i];
+    loadEl.innerHTML = `<div class="flash-loading"><div class="flash-loading-text">&#10227; GERANDO FLASHCARD ${i+1} DE ${erros.length}...</div></div>`;
     const gabarito = q.o[q.g.charCodeAt(0)-65] || q.g;
-    const alts = q.o.map((o,i) => o ? String.fromCharCode(65+i)+') '+o.substring(0,80) : null).filter(Boolean).join(' | ');
-    return `Q${i+1} [UEL ${q.a} nº${q.n}]\nEnunciado: ${q.q.substring(0,400)}\nAlternativas: ${alts}\nGabarito: (${q.g}) ${gabarito.substring(0,120)}`;
-  }).join('\n\n---\n\n');
-  const prompt = `Você é um professor experiente de medicina preparando candidatos para residência médica no Brasil.
+    const alts = q.o.map((o,j) => o ? String.fromCharCode(65+j)+') '+o : null).filter(Boolean).join('\n');
+    const prompt = `Você é professor de medicina para residência médica no Brasil. Crie UM flashcard de estudo de alta qualidade.
 
-Para cada questão abaixo, crie UM flashcard de estudo de alta qualidade.
+REGRAS:
+- FRENTE: pergunta clínica ORIGINAL sobre o conceito central. NÃO copie o enunciado. Use formato: "Qual a conduta em...", "Como diagnosticar...", "Por que usar X em vez de Y..."
+- VERSO: (1) resposta direta, (2) raciocínio clínico com porquê, (3) diferencial ou macete para prova
+- Para questões de associação: foque no conceito mais testável
 
-REGRAS OBRIGATÓRIAS:
-- A FRENTE deve ser uma PERGUNTA CLÍNICA ORIGINAL que testa o mesmo conceito da questão — NÃO copie o enunciado. Exemplos: "Qual a conduta inicial em...", "Quais os critérios diagnósticos de...", "Por que se usa X e não Y em..."
-- O VERSO deve ter: (1) resposta direta e objetiva, (2) raciocínio clínico explicando o porquê, (3) um diferencial ou ponto de atenção relevante para a prova
-- Para questões de associação/relacione: foque no conceito mais importante da lista
-- Para casos clínicos: formule a pergunta baseada no diagnóstico ou conduta — não no caso específico
+RESPONDA APENAS COM UM OBJETO JSON. Sem nenhum texto fora do JSON.
+Formato: {"frente":"...","verso":"...","ano":${q.a},"num":${q.n}}
 
-RESPONDA APENAS COM O ARRAY JSON. Sem texto antes ou depois, sem markdown.
+Questão UEL ${q.a} nº${q.n}:
+${q.q.substring(0,500)}
+${alts}
+Gabarito: (${q.g}) ${gabarito}`;
 
-Formato:
-[{"frente":"Pergunta clínica direta e original","verso":"Resposta completa com raciocínio: conceito correto + por que é importante + diferencial relevante","ano":2020,"num":1}]
+    let tentativas = 0;
+    while(tentativas < 2) {
+      try {
+        const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method:"POST",
+          headers:{"Content-Type":"application/json","Authorization":`Bearer ${groqKey}`},
+          body:JSON.stringify({model:"llama-3.1-8b-instant",temperature:0.4,max_tokens:600,messages:[{role:"user",content:prompt}]})
+        });
+        const d = await r.json();
+        if(d.error) {
+          if(d.error.message && d.error.message.includes('Rate limit')) {
+            loadEl.innerHTML = `<div class="flash-loading"><div class="flash-loading-text">&#9201; AGUARDANDO RATE LIMIT... (${i+1}/${erros.length})</div></div>`;
+            await new Promise(res => setTimeout(res, 12000));
+            tentativas++; continue;
+          }
+          throw new Error(d.error.message || 'Erro Groq');
+        }
+        const txt = d.choices?.[0]?.message?.content || '{}';
+        const match = txt.match(/\{[\s\S]*\}/);
+        if(match) {
+          const card = JSON.parse(match[0]);
+          if(card.frente && card.verso) flashCards.push(card);
+        }
+        break;
+      } catch(e) {
+        console.warn('Flashcard erro Q'+q.n+':', e.message);
+        break;
+      }
+    }
+  }
 
-Questões:
-${questoesStr}`;
-
-  try {
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method:"POST",
-      headers:{"Content-Type":"application/json","Authorization":`Bearer ${groqKey}`},
-      body:JSON.stringify({model:"llama-3.1-8b-instant",temperature:0.3,max_tokens:2500,messages:[{role:"user",content:prompt}]})
-    });
-    const d = await r.json();
-    if(d.error) throw new Error(d.error.message || d.error.error?.message || 'Erro Groq');
-    const txt = d.choices?.[0]?.message?.content || '[]';
-    // Extrair apenas o array JSON, ignorando texto antes/depois
-    const match = txt.match(/\[\s*\{[\s\S]*\}\s*\]/);
-    if(!match) throw new Error('Resposta fora do formato esperado');
-    flashCards = JSON.parse(match[0]);
-    flashIdx = 0;
-    renderFlashcard();
-  } catch(e) {
-    document.getElementById('flash-body').innerHTML = `
+  if(flashCards.length === 0) {
+    loadEl.innerHTML = `
       <div style="text-align:center;padding:2rem;max-width:520px">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--accent);margin-bottom:.8rem">ERRO AO GERAR</div>
         <div style="font-family:'Barlow',sans-serif;font-size:.88rem;color:var(--text-alt);line-height:1.7;margin-bottom:1.2rem;text-align:left;background:var(--bg2);border:1px solid var(--border);padding:1rem">
-          <strong style="color:var(--orange)">Erro ao conectar com o Groq.</strong><br><br>
-          Verifique se sua chave está correta e tente novamente.<br>
-          Chaves Groq começam com <strong>gsk_</strong><br><br>
-          Se ainda não tem uma chave:<br>
-          Acesse <a href="https://console.groq.com/keys" target="_blank" style="color:var(--cyan)">console.groq.com/keys</a> e crie gratuitamente.
+          <strong style="color:var(--orange)">Não foi possível gerar os flashcards.</strong><br><br>
+          Verifique se sua chave Groq está correta (começa com <strong>gsk_</strong>).<br>
+          Acesse <a href="https://console.groq.com/keys" target="_blank" style="color:var(--cyan)">console.groq.com/keys</a> para criar ou renovar.
         </div>
-        <div style="font-family:'Share Tech Mono',monospace;font-size:.65rem;color:var(--muted);margin-bottom:1.2rem">${e.message || 'Erro desconhecido'}</div>
         <div style="display:flex;gap:.8rem;justify-content:center;flex-wrap:wrap">
           <button class="btn-ghost" onclick="openGroqModal()">&#9881; CONFIGURAR CHAVE</button>
           <button class="btn-ghost" onclick="goHome()">VOLTAR</button>
         </div>
       </div>`;
+    return;
   }
+  renderFlashcard();
 }
 
 function renderFlashcard() {
