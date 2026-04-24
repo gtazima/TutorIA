@@ -1038,14 +1038,25 @@ async function generateFlashcardsFromPool(questoes) {
   }
 
   const erros = questoes.slice(0, 5);
-  const questoesStr = erros.map((q,i) => `${i+1}. [UEL ${q.a} Q${q.n}] ${q.q.substring(0,120)} | Gabarito: ${q.g}`).join('\n');
-  const prompt = `Responda SOMENTE com um array JSON válido, sem texto adicional, sem markdown, sem explicações. Formato exato: [{"frente":"pergunta curta sobre conceito médico","verso":"explicação do gabarito em 2 frases","ano":2020,"num":1}]\nCrie um flashcard para cada questão abaixo:\n${questoesStr}`;
+  const questoesStr = erros.map((q,i) => {
+    const gabarito = q.o[q.g.charCodeAt(0)-65] || q.g;
+    return `${i+1}. [UEL ${q.a} Q${q.n}]\nCaso clínico: ${q.q.substring(0,300)}\nResposta correta (${q.g}): ${gabarito.substring(0,150)}`;
+  }).join('\n\n');
+  const prompt = `Você é professor de medicina. Crie flashcards de alta qualidade para residência médica.
+
+RESPONDA APENAS COM O ARRAY JSON. Nenhum texto antes ou depois.
+
+Formato obrigatório:
+[{"frente":"Pergunta clínica direta testando o conceito central (ex: Qual o diagnóstico / conduta / mecanismo em...)","verso":"Resposta objetiva com raciocínio clínico: diagnóstico/conduta correta e por que as outras alternativas estão erradas. 3-4 frases.","ano":2020,"num":1}]
+
+Questões:
+${questoesStr}`;
 
   try {
     const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":`Bearer ${groqKey}`},
-      body:JSON.stringify({model:"llama-3.1-8b-instant",temperature:0.3,max_tokens:1500,messages:[{role:"user",content:prompt}]})
+      body:JSON.stringify({model:"llama-3.1-8b-instant",temperature:0.3,max_tokens:2000,messages:[{role:"user",content:prompt}]})
     });
     const d = await r.json();
     if(d.error) throw new Error(d.error.message || d.error.error?.message || 'Erro Groq');
